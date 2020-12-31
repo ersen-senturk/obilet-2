@@ -74,8 +74,8 @@ require(lubridate)
 slackr_setup(channel = "#ios-review-itunesr", username= "ios_review",
                        incoming_webhook_url = "https://hooks.slack.com/services/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",
                        bot_user_oauth_token = "xoxb-2893681624-1588164479511-KVdNdxJLjjiqTd7Mn5bERs8e")
-require(rPython)
-python.load("/Users/yusufhancer/Desktop/androidScrap.py")
+# require(rPython)
+# python.load("/Users/yusufhancer/Desktop/androidScrap.py")
 require(purrr)
 android <- read.csv2("/Users/yusufhancer/Desktop/android.csv",header=F)
 colnames <- c("Date","Rating","Review")
@@ -117,8 +117,8 @@ Date: ", messagefromyesterday[i,"Date"]))
    textSlackr(paste0("There is no review from ", Sys.Date()-1, " ", weekdays.Date(Sys.Date()-1)))
 }
 
-messagefromlastweek <- filter(messsage, Date > Sys.Date()-7)
-if(weekdays.Date(Sys.Date()) = "Thursday" & unique(messagefromlastweek$Date){
+messagefromlastweek <- filter(message, Date > Sys.Date()-7)
+if(weekdays.Date(Sys.Date()) = "Thursday" & length(messagefromlastweek$Date) > 0)){
   textSlackr(paste0("Reviews from last week:"))
   for(i in 1:length(messagefromlastweek)){
     textSlackr(paste0(messagefromlastweek[i,"Platform"],"
