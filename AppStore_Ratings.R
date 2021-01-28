@@ -1,9 +1,7 @@
 #itunesr gerekli
 #devtools::install_github("amrrs/itunesr")
 require("itunesr")
-#devtools::install_github("cran/rPython")
-
-obiletID<-596039443
+obiletID<-596039443   #https://apps.apple.com/tr/app/obilet-otob%C3%BCs-ve-u%C3%A7ak-bileti/id596039443?l=tr
 require(rvest)
 require(xtable)
 require(httr)
@@ -60,27 +58,24 @@ obilet_reviews_de$Date<-as.Date(obilet_reviews_de$Date, origin="1970-01-01")
 
 #Total
 obilet_reviews<-rbind.fill(obilet_reviews_tr,obilet_reviews_us,obilet_reviews_de)
-require(googlesheets4)
+#require(googlesheets4)                                           # benim googlesheet'ime yazdırıyor
 # sheet_write(obilet_reviews,
 #             ss="https://docs.google.com/spreadsheets/d/1zNyDFlo9wJdtjGV9SzRp8z7TOctUyxV4gsi8tqAICnI/edit#gid=0",
 #             sheet="ios_reviews2")
 
 message <- obilet_reviews[c("Date","Rating","Review")]
 message$Platform <- "iOS"
-# devtools::install_github('hrbrmstr/slackr')
-require(slackr)
-require(lubridate)
 
-slackr_setup(channel = "#ios-review-itunesr", username= "ios_review",
-                       incoming_webhook_url = "https://hooks.slack.com/services/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",
-                       bot_user_oauth_token = "xoxb-2893681624-1588164479511-KVdNdxJLjjiqTd7Mn5bERs8e")
-# require(rPython)
-# python.load("/Users/yusufhancer/Desktop/androidScrap.py")
-require(purrr)
-android <- read.csv2("/Users/yusufhancer/Desktop/android.csv",header=F)
+require(lubridate)
+library(tidyverse)
+aaa <- readLines("/Users/yusufhancer/Desktop/android.txt") %>% str_split(";&;")       # python scriptinde ;&; diye belirtildiği için burada da böyle herhangi bir şeyle değiştirilebilir
+android <- matrix(unlist(aaa),ncol=3,byrow=T)
+android <- data.frame(android)
 colnames <- c("Date","Rating","Review")
 colnames(android) <- colnames
 android$Platform <- "Android"
+
+
 android$Date <- gsub(" Ocak ","-1-",android$Date)
 android$Date <- gsub(" Şubat ","-2-",android$Date)
 android$Date <- gsub(" Mart ","-3-",android$Date)
@@ -94,49 +89,62 @@ android$Date <- gsub(" Ekim ","-10-",android$Date)
 android$Date <- gsub(" Kasım ","-11-",android$Date)
 android$Date <- gsub(" Aralık ","-12-",android$Date)
 
-android$Date <- as.Date(android$Date, format="%d-%m-%y")
+# eğer daha fazla comment alınmak isterse scrolldown yapılmalıydı python scriptte
+# yapıldığı takdirde burda bir değişikliğe ihtiyaç yok.
+# eğer ileride başka bir link içinde bu yapı kullanılacaksa bu kısımda güncellenmeli
+android[seq(nrow(android)/2+1,nrow(android),by=1),1] <- as.Date(android[seq(nrow(android)/2+1,nrow(android),by=1),1], format="%d-%m-%Y")
+android[seq(1,nrow(android)/2,by=1),1] <- as.Date(android[seq(1,nrow(android)/2,by=1),1], format='%B %d, %Y')
 
+date <- android[,1]
+date <- as.numeric(date)
+date <- as.Date(as.POSIXct(date*24*60*60, origin = "1970-01-01", tz="UTC"))
+android[,1] <- date
 
 message <- rbind.fill(message,android)
-# slackr_setup(config_file = "/Users/yusufhancer/Desktop/iOS-review.txt")
-message$Rating <- ifelse(message[,"Rating"]=="1" | message[,"Rating"]=="1 yıldız ","★☆☆☆☆",
-                     ifelse(message[,"Rating"]=="2" | message[,"Rating"]=="2 yıldız ","★★☆☆☆",
-                        ifelse(message[,"Rating"]=="3" | message[,"Rating"]=="3 yıldız ","★★★☆☆",
-                           ifelse(message[,"Rating"]=="4" | message[,"Rating"]=="4 yıldız ", "★★★★☆","★★★★★"))))
+message$Rating <- ifelse(message[,"Rating"]=="1","★☆☆☆☆",
+                     ifelse(message[,"Rating"]=="2","★★☆☆☆",
+                        ifelse(message[,"Rating"]=="3","★★★☆☆",
+                           ifelse(message[,"Rating"]=="4", "★★★★☆","★★★★★"))))
+message <- message[order(message$Date,decreasing = T),]
 
-messagefromyesterday <- filter(message, Date > Sys.Date()-1)
-if((Sys.Date()-1) %in% unique(messagefromyesterday$Date)){
-  textSlackr(paste0("Reviews from ", Sys.Date()-1, " ", weekdays.Date(Sys.Date()-1),":"))
-  for(i in 1:length(messagefromyesterday)){
-      textSlackr(paste0(messagefromyesterday[i,"Platform"],"
-Rating: ",messagefromyesterday[i,"Rating"],"
-Message: ", messagefromyesterday[i,"Review"], "
-Date: ", messagefromyesterday[i,"Date"]))
-    }
-}else{
-   textSlackr(paste0("There is no review from ", Sys.Date()-1, " ", weekdays.Date(Sys.Date()-1)))
-}
-
-messagefromlastweek <- filter(message, Date > Sys.Date()-7)
-if(weekdays.Date(Sys.Date()) = "Thursday" & length(messagefromlastweek$Date) > 0)){
-  textSlackr(paste0("Reviews from last week:"))
-  for(i in 1:length(messagefromlastweek)){
-    textSlackr(paste0(messagefromlastweek[i,"Platform"],"
-Rating: ",messagefromlastweek[i,"Rating"],"
-Message: ", messagefromlastweek[i,"Review"], "
-Date: ", messagefromlastweek[i,"Date"]))
+messagefromyesterday <- filter(message, Date > Sys.Date()-3)                                        # manual olarak çalıştırmadan değiştirdiğim kısım
+title = paste0("Reviews from ", Sys.Date()-2, " ", weekdays.Date(Sys.Date()-2)," to today:")        
+noreview = paste0("There is no review from ", Sys.Date()-2, " ", weekdays.Date(Sys.Date()-2)," to today.")
+#iOS App
+# devtools::install_github('hrbrmstr/slackr')
+require(slackr)
+messagefromyesterdayiOS <- filter(messagefromyesterday, Platform == "iOS")
+slackr_setup(channel = "#app-reviews",
+             username= "ios_review",
+             incoming_webhook_url = "https://hooks.slack.com/services/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",
+             bot_user_oauth_token = 'xoxb-2893681624-1588164479511-KVdNdxJLjjiqTd7Mn5bERs8e')
+if(nrow(messagefromyesterdayiOS) != 0){
+  textSlackr(title)
+  for(i in 1:nrow(messagefromyesterdayiOS)){
+    textSlackr(paste0(messagefromyesterdayiOS[i,"Platform"],"
+Date: ", messagefromyesterdayiOS[i,"Date"],"
+Rating: ",messagefromyesterdayiOS[i,"Rating"],"
+Message: ", messagefromyesterdayiOS[i,"Review"]))
   }
 }else{
-  textSlackr(paste0("There is no review from last week"))
+  textSlackr(noreview)
 }
-# install.packages("miniUI")
-# install.packages("shiny")
-# install.packages("shinyFiles")
 
-# f <- system.file("/Users/yusufhancer/Desktop/AppStore_Ratings.R")
-# cmd <- cron_rscript(f)
-# # cron_add(command = cmd, frequency = 'minutely', id = 'minuteTest', description = 'My process 1')
-# cron_rm(id="deneme")
+#Android App
+messagefromyesterdayAndroid <- filter(messagefromyesterday, Platform == "Android")
+slackr_setup(channel = "#app-reviews", username= "android_review",
+             incoming_webhook_url = "https://hooks.slack.com/services/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",  #farklı kanallara mesaj atabilmek için buradaki channel değişitirilir
+             bot_user_oauth_token = "xoxb-2893681624-1614885992069-coa5DW04FnLq4A5HtGBEvZtm")
+if(nrow(messagefromyesterdayAndroid) != 0){
+  textSlackr(title)
+  for(i in 1:nrow(messagefromyesterdayAndroid)){
+    textSlackr(paste0(messagefromyesterdayAndroid[i,"Platform"],"
+Date: ", messagefromyesterdayAndroid[i,"Date"],"
+Rating: ",messagefromyesterdayAndroid[i,"Rating"],"
+Message: ", messagefromyesterdayAndroid[i,"Review"]))
+  }
+}else{
+  textSlackr(noreview)
+}
 
-# cron_add(command = cmd, frequency = 'daily', at= "9:30" ,days_of_week = c(1, 2, 3, 4, 5), id = 'TriggerfromComp', description = 'My process 1')
 
