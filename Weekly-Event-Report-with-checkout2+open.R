@@ -62,7 +62,7 @@ data_web_otobus_hepsi$Ulasim_Yolu<-"Otobus"
 data_web_otobus_hepsi$Hafta<-as.Date(week, "%d/%m/%Y")
 data_web_otobus_hepsi$Anonim_Odeme<-data_web_otobus_hepsi$purchase.x-(ifelse(is.na(data_web_otobus_hepsi$`Loggedin User Detected`),0,data_web_otobus_hepsi$`Loggedin User Detected`)+
                                                                         ifelse(is.na(data_web_otobus_hepsi$`Registered User Detected`),0,data_web_otobus_hepsi$`Registered User Detected`))
-data_final[is.na(data_final$Total_MasterPass_Odeme),"MasterPass_Odeme"]=0
+
 data_web_otobus_final<-data_web_otobus_hepsi[c("Ulasim_Yolu", "Hafta","deviceCategory", "viewJourneys", "clickJourney", "addToCart", "checkout-1","checkout-2", "purchase.x", "PurchaseSuccess.x","Loggedin User Detected","Registered User Detected","Anonim_Odeme", "Successfull payment MasterPass.x",
                                                "purchase.y","PurchaseSuccess.y","Successfull payment MasterPass.y",
                                                "Bus Ticket Cancel_Clicked on Cancel Ticket","Bus Ticket Cancel_Clicked on Cancel Ticket from Cancel Pop-up","Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up",
