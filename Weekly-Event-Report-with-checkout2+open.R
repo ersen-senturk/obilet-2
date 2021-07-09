@@ -6,17 +6,17 @@ require(dplyr)
 require(googleAnalyticsR)
 require(googleAuthR)
 
-start<-"2021-5-31"
-end<-"2021-6-6"
-week<-as.Date("31/5/2021", format="%d/%m/%Y")
+start<-"2021-6-28"
+end<-"2021-7-4"
+week<-as.Date("28/6/2021", format="%d/%m/%Y")
 ga_id<-63089351
 ga_id_android<-73607140
 ga_id_ios<-72226277
 
 #1. Web Genel (Otobüs - Uçak)
 my_filter1<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions = "funnel")
-my_filter2<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions =  "Payment Success")
-my_filter3<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions =  "MasterPass")
+my_filter2<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions = "Payment Success")
+my_filter3<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions = "MasterPass")
 my_filter4<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions = "Membership")
 my_filter5<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions = "Bus Ticket Cancel")
 my_filter_clause<-filter_clause_ga4(list(my_filter1, my_filter2, my_filter3,my_filter4,my_filter5),operator = "OR")
@@ -26,7 +26,6 @@ data1<-google_analytics(ga_id,
                         metrics = c("ga:uniqueEvents", "ga:totalEvents"),
                         dimension=c("eventCategory","eventAction","eventLabel", "deviceCategory"), anti_sample = T,
                         dim_filters = my_filter_clause)
-
 unique(data1$eventCategory)  #kontrol kodu
 
 ##1.1. Web otobüs
@@ -46,7 +45,11 @@ for(i in 1:length(data_web_otobus$eventCategory)){
 }
   
 data_web_otobus_unique<-cast(data_web_otobus, deviceCategory~eventLabel, value = "uniqueEvents")
+if(!("Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_web_otobus_unique$eventLabel))){
+  data_web_otobus_unique[,"Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up"] <- 0
+}
 data_web_otobus_total<-cast(data_web_otobus, deviceCategory~eventLabel, value="totalEvents")
+
 ### Purchase Success = Sigorta, purchase = Otobüs Bilet, Successful payment Masterpass = Masterpass
 data_web_otobus_total_gerekliler<-data_web_otobus_total[c("deviceCategory","purchase", "PurchaseSuccess","Successfull payment MasterPass")] 
 data_web_otobus_unique_gerekliler<-data_web_otobus_unique[c("deviceCategory", "viewJourneys", "clickJourney", "addToCart", "checkout-1", "checkout-2", "purchase", "PurchaseSuccess","Loggedin User Detected","Registered User Detected", "Successfull payment MasterPass",
@@ -62,22 +65,24 @@ data_web_otobus_hepsi$Ulasim_Yolu<-"Otobus"
 data_web_otobus_hepsi$Hafta<-as.Date(week, "%d/%m/%Y")
 data_web_otobus_hepsi$Anonim_Odeme<-data_web_otobus_hepsi$purchase.x-(ifelse(is.na(data_web_otobus_hepsi$`Loggedin User Detected`),0,data_web_otobus_hepsi$`Loggedin User Detected`)+
                                                                         ifelse(is.na(data_web_otobus_hepsi$`Registered User Detected`),0,data_web_otobus_hepsi$`Registered User Detected`))
-
 data_web_otobus_final<-data_web_otobus_hepsi[c("Ulasim_Yolu", "Hafta","deviceCategory", "viewJourneys", "clickJourney", "addToCart", "checkout-1","checkout-2", "purchase.x", "PurchaseSuccess.x","Loggedin User Detected","Registered User Detected","Anonim_Odeme", "Successfull payment MasterPass.x",
                                                "purchase.y","PurchaseSuccess.y","Successfull payment MasterPass.y",
                                                "Bus Ticket Cancel_Clicked on Cancel Ticket","Bus Ticket Cancel_Clicked on Cancel Ticket from Cancel Pop-up","Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up",
+                                               "Bus Ticket Cancel_Clicked on Open Ticket from CancelOrOpen Pop-up",
                                                "Bus Ticket Cancel_Clicked on Change Ticket","Bus Ticket Cancel_Clicked on Change Ticket from Change Pop-up","Bus Ticket Cancel_Clicked on Change Ticket from ChangeOrOpen Pop-up",
-                                               "Bus Ticket Cancel_Clicked on Open Ticket from CancelOrOpen Pop-up","Bus Ticket Cancel_Clicked on Open Ticket from ChangeOrOpen Pop-up",
+                                               "Bus Ticket Cancel_Clicked on Open Ticket from ChangeOrOpen Pop-up",
                                                "Membership_Clicked on Cancel Ticket","Membership_Clicked on Cancel Ticket from Cancel Pop-up","Membership_Clicked on Cancel Ticket from CancelOrOpen Pop-up",
                                                "Membership_Clicked on Open Ticket from CancelOrOpen Pop-up",
                                                "Membership_Clicked on Change Ticket","Membership_Clicked on Change Ticket from Change Pop-up","Membership_Clicked on Change Ticket from ChangeOrOpen Pop-up",
                                                "Membership_Clicked on Open Ticket from ChangeOrOpen Pop-up")]
 names(data_web_otobus_final)<-c("Ulasim_Yolu", "Hafta", "Kanal", "Sefer_Listeleme", "Sefer_Secimi","Koltuk_Secimi", "Odeme_Sayfasi_Goruntuleme","Odeme_Islemi_Istegi", "Odeme", "Sigorta", "Uye_Odeme", "Uye_Anonim_Odeme","Anonim_Odeme", "MasterPass_Odeme", "Total_Odeme", "Total_Sigorta","Total_MasterPass_Odeme",
                                 "KolayIslem_Iptal","KolayIslem_IptalPopup_Iptal","KolayIslem_IptalyadaAcikPopup_Iptal",
+                                "KolayIslem_IptalyadaAcikPopup_Acik",
                                 "KolayIslem_Degistir","KolayIslem_DegistirPopup_Degistir","KolayIslem_DegistiryadaAcikPopup_Degistir",
-                                "KolayIslem_IptalyadaAcikPopup_Acik","KolayIslem_DegistiryadaAcikPopup_Acik",
+                                "KolayIslem_DegistiryadaAcikPopup_Acik",
                                 "Biletlerim_Iptal","Biletlerim_IptalPopup_Iptal","Biletlerim_IptalyadaAcikPopup_Iptal",
-                                "Biletlerim_IptalyadaAcikPopup_Acik","Biletlerim_Degistir","Biletlerim_DegistirPopup_Degistir","Biletlerim_DegistiryadaAcikPopup_Degistir",
+                                "Biletlerim_IptalyadaAcikPopup_Acik",
+                                "Biletlerim_Degistir","Biletlerim_DegistirPopup_Degistir","Biletlerim_DegistiryadaAcikPopup_Degistir",
                                 "Biletlerim_DegistiryadaAcikPopup_Acik")
 
 ##1.2 Web Ucak w/o ödeme sayfası, ödeme ve sigorta
@@ -122,10 +127,8 @@ data_web_ucak_odemesiz<-rbind.fill(data_web_domesticTY_final, data_web_domesticC
 data_web_ucak_odemesiz$Kanal<-gsub("mobile", "1. Mobile_Web", data_web_ucak_odemesiz$Kanal)
 data_web_ucak_odemesiz$Kanal<-gsub("desktop", "2. Desktop", data_web_ucak_odemesiz$Kanal)
 
-
 #2. Android Genel (Otobüs - Uçak) İleride Insurance Payment Success-Bus altına gelecek ve
 #Payment Success-Bus altından üye mi değil mi bilgisine bakılacak
-
 my_filter1_android<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions = "funnel")
 my_filter2_android<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions =  "Payment Success")
 my_filter3_android<-dim_filter(dimension = "eventCategory",operator = "REGEXP",expressions =  "MasterPass")
@@ -148,8 +151,6 @@ data_android_otobus<-subset(data1_android,(data1_android$eventAction%in%c("viewJ
                               (data1_android$eventCategory=="Payment Success - Bus"&data1_android$eventLabel%in%c("PurchaseSuccess","Registered User Detected","Loggedin User Detected"))|
                               (data1_android$eventCategory=="MasterPass"&data1_android$eventLabel=="Successful payment MasterPass"))
 
-
-
 data_android_otobus$eventLabel[data_android_otobus$eventLabel == "(not set)"] <- data_android_otobus$eventAction[data_android_otobus$eventLabel == "(not set)"]
 data_android_otobus$Ulasim_Yolu<-"Otobus"
 data_android_otobus$Hafta<-as.Date(week, "%d/%m/%Y")
@@ -157,6 +158,9 @@ data_android_otobus$Kanal<-"Android-New"
 
 data_android_otobus_unique<-cast(data_android_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value = "uniqueEvents")
 data_android_otobus_total<-cast(data_android_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value="totalEvents")
+if(!("Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_android_otobus_unique$eventLabel))){
+  data_android_otobus_unique[,"Clicked on Cancel Ticket from CancelOrOpen Pop-up"] <- 0
+}
 
 data_android_otobus_total_gerekliler<-data_android_otobus_total[c( "Ulasim_Yolu","Hafta","Kanal", "purchase", "PurchaseSuccess","Successful payment MasterPass")] 
 data_android_otobus_unique_gerekliler<-data_android_otobus_unique[c("Ulasim_Yolu","Hafta","Kanal", "viewJourneys", "clickJourney", "addToCart", "checkout-1", "checkout-2","purchase", "PurchaseSuccess","Loggedin User Detected","Registered User Detected", "Successful payment MasterPass",
@@ -177,14 +181,11 @@ names(data_android_otobus_final)<-c("Ulasim_Yolu", "Hafta", "Kanal", "Sefer_List
                                     "Biletlerim_IptalyadaAcikPopup_Acik","Biletlerim_Degistir","Biletlerim_DegistirPopup_Degistir","Biletlerim_DegistiryadaAcikPopup_Degistir",
                                     "Biletlerim_DegistiryadaAcikPopup_Acik")
 
-
 ##2.2 Android Ucak w/o ödeme sayfası, ödeme ve sigorta
 data_android_flight_odemesiz<-subset(data1_android,data1_android$eventAction%in%c("listDomesticOneWayFlights","listDomesticTwoWayFlights",
                                                                                   "listInternationalFlights","selectDomesticOneWayFlight"
                                                                                   ,"selectDomesticOutboundFlight",
                                                                                   "selectDomesticReturnFlight","selectInternationalFlight"))
-
-
 ###2.2.1. Android DomesticTY
 data_android_domesticTY<-subset(data_android_flight_odemesiz, data_android_flight_odemesiz$eventAction%in%c("listDomesticOneWayFlights", "selectDomesticOneWayFlight"))
 
@@ -205,7 +206,6 @@ data_android_domesticCY$Hafta<-as.Date(week, "%d/%m/%Y")
 data_android_domesticCY$Kanal<-"3. Android-New"
 
 data_android_domesticCY_final<-cast(data_android_domesticCY, Ulasim_Yolu+Hafta+Kanal~eventAction, value="uniqueEvents")
-
 data_android_domesticCY_final<-data_android_domesticCY_final[c("Ulasim_Yolu", "Hafta", "Kanal", "listDomesticTwoWayFlights", "selectDomesticOutboundFlight","selectDomesticReturnFlight")]
 names(data_android_domesticCY_final)<-c("Ulasim_Yolu", "Hafta", "Kanal", "Sefer_Listeleme", "Gidis_Sefer_Secimi", "Donus_Sefer_Secimi")
 
@@ -247,7 +247,6 @@ data_ios_otobus<-subset(data1_ios,(data1_ios$eventAction%in%c("viewJourneys","cl
                           (data1_ios$eventCategory=="Payment Success - Bus"&data1_ios$eventLabel%in%c("PurchaseSuccess","Registered User Detected","Loggedin User Detected"))|
                           (data1_ios$eventCategory=="MasterPass"&data1_ios$eventLabel=="Successfully payment MasterPass"))
 
-
 data_ios_otobus$eventLabel[data_ios_otobus$eventLabel == "(not set)"] <- data_ios_otobus$eventAction[data_ios_otobus$eventLabel == "(not set)"]
 data_ios_otobus$Ulasim_Yolu<-"Otobus"
 data_ios_otobus$Hafta<-as.Date(week, "%d/%m/%Y")
@@ -255,6 +254,9 @@ data_ios_otobus$Kanal<-"Ios-New"
 
 data_ios_otobus_unique<-cast(data_ios_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value = "uniqueEvents")
 data_ios_otobus_total<-cast(data_ios_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value="totalEvents")
+if(!("Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_ios_otobus_unique$eventLabel))){
+  data_ios_otobus_unique[,"Clicked on Cancel Ticket from CancelOrOpen Pop-up"] <- 0
+}
 
 data_ios_otobus_total_gerekliler<-data_ios_otobus_total[c( "Ulasim_Yolu","Hafta","Kanal", "purchase", "PurchaseSuccess","Successfully payment MasterPass")] 
 data_ios_otobus_unique_gerekliler<-data_ios_otobus_unique[c("Ulasim_Yolu","Hafta","Kanal", "viewJourneys", "clickJourney", "addToCart", "checkout-1","checkout-2", "purchase", "PurchaseSuccess","Loggedin User Detected","Registered User Detected", "Successfully payment MasterPass",
@@ -283,7 +285,6 @@ data_ios_flight_odemesiz<-subset(data1_ios,data1_ios$eventAction%in%c("listDomes
 
 ###3.2.1. Ios DomesticTY
 data_ios_domesticTY<-subset(data_ios_flight_odemesiz, data_ios_flight_odemesiz$eventAction%in%c("listDomesticOneWayFlights", "selectDomesticOneWayFlight"))
-
 data_ios_domesticTY$Ulasim_Yolu<-"Ucak_Domestic_Tek_Yon"
 data_ios_domesticTY$Hafta<-as.Date(week, "%d/%m/%Y")
 data_ios_domesticTY$Kanal<-"4. Ios-New"
@@ -295,7 +296,6 @@ names(data_ios_domesticTY_final)<-c("Ulasim_Yolu", "Hafta", "Kanal", "Sefer_List
 
 ###3.2.2. Ios DomesticCY
 data_ios_domesticCY<-subset(data_ios_flight_odemesiz, data_ios_flight_odemesiz$eventAction%in%c("listDomesticTwoWayFlights", "selectDomesticOutboundFlight","selectDomesticReturnFlight"))
-
 data_ios_domesticCY$Ulasim_Yolu<-"Ucak_Domestic_Gidis_Donus"
 data_ios_domesticCY$Hafta<-as.Date(week, "%d/%m/%Y")
 data_ios_domesticCY$Kanal<-"4. Ios-New"
@@ -307,13 +307,11 @@ names(data_ios_domesticCY_final)<-c("Ulasim_Yolu", "Hafta", "Kanal", "Sefer_List
 
 ###3.2.3. Ios International
 data_ios_international<-subset(data_ios_flight_odemesiz, data_ios_flight_odemesiz$eventAction%in%c("listInternationalFlights", "selectInternationalFlight"))
-
 data_ios_international$Ulasim_Yolu<-"Ucak_International"
 data_ios_international$Hafta<-as.Date(week, "%d/%m/%Y")
 data_ios_international$Kanal<-"4. Ios-New"
 
 data_ios_international_final<-cast(data_ios_international, Ulasim_Yolu+Hafta+Kanal~eventAction, value="uniqueEvents")
-
 data_ios_international_final<-data_ios_international_final[c("Ulasim_Yolu", "Hafta", "Kanal", "listInternationalFlights", "selectInternationalFlight" )]
 names(data_ios_international_final)<-c("Ulasim_Yolu", "Hafta", "Kanal", "Sefer_Listeleme", "Sefer_Secimi")
 
@@ -377,7 +375,6 @@ data1_web_sgm3_gerekliler$Ulasim_Yolu<-"Ucak_International"
 
 ##4.4. Segmented Flight Web Hepsi
 data_web_ucak_odemeli<-rbind.fill(data1_web_sgm1_gerekliler, data1_web_sgm2_gerekliler, data1_web_sgm3_gerekliler)
-
 data_web_ucak_odemeli$Hafta<-as.Date(week, "%d/%m/%Y")
 
 data_web_ucak_odemeli$eventLabel[data_web_ucak_odemeli$eventLabel == "(not set)"] <- data_web_ucak_odemeli$eventAction[data_web_ucak_odemeli$eventLabel == "(not set)"]
@@ -399,7 +396,6 @@ if(!("PurchaseSuccess" %in% unique(data_web_ucak_odemeli$eventLabel))){
 
 data_web_ucak_odemeli_total_gerekliler<-data_web_ucak_odemeli_total[c("Ulasim_Yolu", "Hafta","deviceCategory", "flightPurchase", "PurchaseSuccess","Successfull payment MasterPass")]
 data_web_ucak_odemeli_unique_gerekliler<-data_web_ucak_odemeli_unique[c("Ulasim_Yolu","Hafta", "deviceCategory", "flightCheckout-1","flightCheckout-2", "flightPurchase", "PurchaseSuccess","Loggedin User Detected","Registered User Detected","Successfull payment MasterPass" )]
-
 data_web_ucak_odemeli_final<-merge(data_web_ucak_odemeli_unique_gerekliler, data_web_ucak_odemeli_total_gerekliler, 
                                    by=c("Ulasim_Yolu","Hafta","deviceCategory"), all.x = T)
 
@@ -487,10 +483,8 @@ if(!("PurchaseSuccess" %in% unique(data_android_ucak_odemeli$eventLabel))){
 
 data_android_ucak_odemeli_total_gerekliler<-data_android_ucak_odemeli_total[c("Ulasim_Yolu", "Hafta","Kanal", "flightPurchase", "PurchaseSuccess","Successful payment MasterPass")]
 data_android_ucak_odemeli_unique_gerekliler<-data_android_ucak_odemeli_unique[c("Ulasim_Yolu","Hafta","Kanal", "flightCheckout-1","flightCheckout-2","flightPurchase", "PurchaseSuccess", "Loggedin User Detected", "Registered User Detected", "Successful payment MasterPass")]
-
 data_android_ucak_odemeli_final<-merge(data_android_ucak_odemeli_unique_gerekliler, data_android_ucak_odemeli_total_gerekliler, 
                                        by=c("Ulasim_Yolu","Hafta","Kanal"), all.x = T)
-
 
 names(data_android_ucak_odemeli_final)<-c("Ulasim_Yolu","Hafta", "Kanal", "Odeme_Sayfasi_Goruntuleme","Odeme_Islemi_Istegi", "Odeme","Sigorta", "Uye_Odeme","Uye_Anonim_Odeme", "MasterPass_Odeme", "Total_Odeme", "Total_Sigorta","Total_MasterPass_Odeme")
 data_android_ucak_odemeli_final$Anonim_Odeme<-data_android_ucak_odemeli_final$Odeme-(ifelse(is.na(data_android_ucak_odemeli_final$Uye_Odeme),0,data_android_ucak_odemeli_final$Uye_Odeme)+
@@ -504,7 +498,6 @@ my_filter3_ios_sgm<-dim_filter(dimension = "eventCategory",operator = "REGEXP",e
 #my_filter_clause_ios_sgm<-filter_clause_ga4(list(my_filter1_ios_sgm, my_filter2_ios_sgm, my_filter3_ios_sgm),operator = "OR")
 my_filter_clause_ios_sgm_payment<-filter_clause_ga4(list(my_filter1_ios_sgm))
 my_filter_clause_ios_sgm_paymentSuccess_masterpass<-filter_clause_ga4(list(my_filter2_ios_sgm, my_filter3_ios_sgm),operator = "OR")
-
 
 sg1<-segment_ga4("DomesticTY_ios",segment_id = "gaid::Zy7Y3j7FRd-VD9NdCSe9vA")
 sg2<-segment_ga4("DomesticCY_ios",segment_id = "gaid::Tuc6WiHATFqqEfjXhNVENw")
@@ -540,7 +533,6 @@ data1_ios_sgm2_payment<-google_analytics(ga_id_ios,
                                          anti_sample = T,
                                          segments=sg2,
                                          dim_filters = my_filter_clause_ios_sgm_payment) #uçak ödeme ve checkout
-
 data1_ios_sgm2_paymentSuccess_masterpass<-google_analytics(ga_id_ios,
                                                            date_range = c(start,end),
                                                            metrics = c("ga:uniqueEvents", "ga:totalEvents"),
@@ -550,7 +542,6 @@ data1_ios_sgm2_paymentSuccess_masterpass<-google_analytics(ga_id_ios,
                                                            dim_filters = my_filter_clause_ios_sgm_paymentSuccess_masterpass) #uçak paymentsuccess ve masterpass
 
 data1_ios_sgm2<-rbind.fill(data1_ios_sgm2_paymentSuccess_masterpass, data1_ios_sgm2_payment)
-
 data1_ios_sgm2_gerekliler<-subset(data1_ios_sgm2, (data1_ios_sgm2$eventAction%in%c("flightCheckout-1","flightCheckout-2","flightPurchase"))|
                                     (data1_ios_sgm2$eventCategory=="Payment Success - Flight"&data1_ios_sgm2$eventLabel%in%c("PurchaseSuccess","Loggedin User Detected","Registered User Detected"))|
                                     (data1_ios_sgm2$eventCategory=="MasterPass"&data1_ios_sgm2$eventLabel=="Successfully payment MasterPass"))
@@ -563,7 +554,6 @@ data1_ios_sgm3_payment<-google_analytics(ga_id_ios,
                                          anti_sample = T,
                                          segments=sg3,
                                          dim_filters = my_filter_clause_ios_sgm_payment) #uçak ödeme ve checkout
-
 data1_ios_sgm3_paymentSuccess_masterpass<-google_analytics(ga_id_ios,
                                                            date_range = c(start,end),
                                                            metrics = c("ga:uniqueEvents", "ga:totalEvents"),
@@ -580,13 +570,11 @@ data1_ios_sgm3_gerekliler<-subset(data1_ios_sgm3, (data1_ios_sgm3$eventAction%in
 data1_ios_sgm3_gerekliler$Ulasim_Yolu<-"Ucak_International"
 ##6.4. Segmented Flight Ios Hepsi
 data_ios_ucak_odemeli<-rbind.fill(data1_ios_sgm1_gerekliler, data1_ios_sgm2_gerekliler, data1_ios_sgm3_gerekliler)
-
 data_ios_ucak_odemeli$Hafta<-as.Date(week, "%d/%m/%Y")
 data_ios_ucak_odemeli$Kanal<-"4. Ios-New"
 
 #data_ios_ucak_odemeli$eventLabel[data_ios_ucak_odemeli$eventLabel == "(not set)"] <- data_ios_ucak_odemeli$eventAction[data_ios_ucak_odemeli$eventLabel == "(not set)"]
 #üstteki kod na'lar için çalışmıyor
-
 data_ios_ucak_odemeli$eventLabel[is.na(data_ios_ucak_odemeli$eventLabel)] <- data_ios_ucak_odemeli$eventAction[is.na(data_ios_ucak_odemeli$eventLabel)]
 data_ios_ucak_odemeli_unique<-cast(data_ios_ucak_odemeli, Ulasim_Yolu+Hafta+Kanal~eventLabel, value = "uniqueEvents")
 data_ios_ucak_odemeli_total<-cast(data_ios_ucak_odemeli, Ulasim_Yolu+Hafta+Kanal~eventLabel, value = "totalEvents")
@@ -610,7 +598,6 @@ data_ios_ucak_odemeli_unique_gerekliler<-data_ios_ucak_odemeli_unique[c("Ulasim_
 data_ios_ucak_odemeli_final<-merge(data_ios_ucak_odemeli_unique_gerekliler, data_ios_ucak_odemeli_total_gerekliler, 
                                    by=c("Ulasim_Yolu","Hafta","Kanal"), all.x = T)
 
-
 names(data_ios_ucak_odemeli_final)<-c("Ulasim_Yolu","Hafta", "Kanal", "Odeme_Sayfasi_Goruntuleme","Odeme_Islemi_Istegi", "Odeme","Sigorta", "Uye_Odeme","Uye_Anonim_Odeme", "MasterPass_Odeme", "Total_Odeme", "Total_Sigorta","Total_MasterPass_Odeme")
 data_ios_ucak_odemeli_final$Anonim_Odeme<-data_ios_ucak_odemeli_final$Odeme-(ifelse(is.na(data_ios_ucak_odemeli_final$Uye_Odeme),0,data_ios_ucak_odemeli_final$Uye_Odeme)+
                                                                                ifelse(is.na(data_ios_ucak_odemeli_final$Uye_Anonim_Odeme),0,data_ios_ucak_odemeli_final$Uye_Anonim_Odeme))
@@ -627,8 +614,8 @@ data_otobus_final$Kanal<-gsub("Ios-New", "4. Ios-New", data_otobus_final$Kanal)
 data_ucak_odemeli<-rbind.fill(data_android_ucak_odemeli_final, data_ios_ucak_odemeli_final, data_web_ucak_odemeli_final)
 data_ucak_final<-merge(data_ucak_odemesiz, data_ucak_odemeli, 
                        by=c("Ulasim_Yolu","Hafta","Kanal"), all.x=T)
-####Session Sayılarını Çekme
 
+####Session Sayılarını Çekme
 #1.Web
 data_session_web<-google_analytics(ga_id,
                                    date_range = c(start,end),
@@ -641,6 +628,7 @@ data_session_web<-data_session_web[c("Hafta", "deviceCategory", "sessions")]
 names(data_session_web)<-c("Hafta","Kanal", "Session_Sayisi")
 data_session_web$Kanal<-gsub("mobile", "1. Mobile_Web", data_session_web$Kanal)
 data_session_web$Kanal<-gsub("desktop", "2. Desktop", data_session_web$Kanal)
+
 #2. Android
 data_session_android<-google_analytics(ga_id_android,
                                        date_range = c(start,end),
@@ -679,10 +667,12 @@ data_final<-data_final[c("Ulasim_Yolu","Hafta","Kanal","Sefer_Listeleme","Sefer_
                          "Gidis_Sefer_Secimi", "Donus_Sefer_Secimi","Odeme_Sayfasi_Goruntuleme","Odeme_Islemi_Istegi",
                          "Odeme","Sigorta","Uye_Odeme","Uye_Anonim_Odeme","Anonim_Odeme","MasterPass_Odeme","Total_Odeme","Total_Sigorta","Total_MasterPass_Odeme",
                          "KolayIslem_Iptal","KolayIslem_IptalPopup_Iptal","KolayIslem_IptalyadaAcikPopup_Iptal",
+                         "KolayIslem_IptalyadaAcikPopup_Acik",
                          "KolayIslem_Degistir","KolayIslem_DegistirPopup_Degistir","KolayIslem_DegistiryadaAcikPopup_Degistir",
-                         "KolayIslem_IptalyadaAcikPopup_Acik","KolayIslem_DegistiryadaAcikPopup_Acik",
+                         "KolayIslem_DegistiryadaAcikPopup_Acik",
                          "Biletlerim_Iptal","Biletlerim_IptalPopup_Iptal","Biletlerim_IptalyadaAcikPopup_Iptal",
-                         "Biletlerim_IptalyadaAcikPopup_Acik","Biletlerim_Degistir","Biletlerim_DegistirPopup_Degistir","Biletlerim_DegistiryadaAcikPopup_Degistir",
+                         "Biletlerim_IptalyadaAcikPopup_Acik",
+                         "Biletlerim_Degistir","Biletlerim_DegistirPopup_Degistir","Biletlerim_DegistiryadaAcikPopup_Degistir",
                          "Biletlerim_DegistiryadaAcikPopup_Acik","Session_Sayisi")]
 data_final[is.na(data_final$Odeme_Sayfasi_Goruntuleme),"Odeme_Sayfasi_Goruntuleme"]=0
 data_final[is.na(data_final$Odeme_Sayfasi_Goruntuleme),"Odeme_Islemi_Istegi"]=0
@@ -726,6 +716,6 @@ data_final<-data_final%>%arrange(Ulasim_Yolu,Kanal)
 class(data_final$Sefer_Secimi)
 sheet_write(data_final,
             ss="https://docs.google.com/spreadsheets/d/1hlkt06QJRKKyjD5q89Fu1UC_hXdBefIMj-27k2z2vno/edit#gid=68852758",
-            sheet="31-5-2021")
+            sheet="28-Haziran-2021")
 # Aylık: https://docs.google.com/spreadsheets/d/1zNyDFlo9wJdtjGV9SzRp8z7TOctUyxV4gsi8tqAICnI/edit#gid=248854895 
 # Haftalık: https://docs.google.com/spreadsheets/d/1hlkt06QJRKKyjD5q89Fu1UC_hXdBefIMj-27k2z2vno/edit#gid=68852758
