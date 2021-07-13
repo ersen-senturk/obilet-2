@@ -6,9 +6,9 @@ require(dplyr)
 require(googleAnalyticsR)
 require(googleAuthR)
 
-start<-"2021-6-28"
-end<-"2021-7-4"
-week<-as.Date("28/6/2021", format="%d/%m/%Y")
+start<-"2021-7-5"
+end<-"2021-7-11"
+week<-as.Date("5/7/2021", format="%d/%m/%Y")
 ga_id<-63089351
 ga_id_android<-73607140
 ga_id_ios<-72226277
@@ -43,11 +43,11 @@ for(i in 1:length(data_web_otobus$eventCategory)){
     data_web_otobus[i,"eventLabel"] <- paste(data_web_otobus[i,"eventCategory"],data_web_otobus[i,"eventLabel"], sep="_")
   }
 }
-  
+
 data_web_otobus_unique<-cast(data_web_otobus, deviceCategory~eventLabel, value = "uniqueEvents")
-if(!("Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_web_otobus_unique$eventLabel))){
+if(!("Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_web_otobus$eventLabel))){
   data_web_otobus_unique[,"Bus Ticket Cancel_Clicked on Cancel Ticket from CancelOrOpen Pop-up"] <- 0
-}
+} 
 data_web_otobus_total<-cast(data_web_otobus, deviceCategory~eventLabel, value="totalEvents")
 
 ### Purchase Success = Sigorta, purchase = Otobüs Bilet, Successful payment Masterpass = Masterpass
@@ -158,7 +158,7 @@ data_android_otobus$Kanal<-"Android-New"
 
 data_android_otobus_unique<-cast(data_android_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value = "uniqueEvents")
 data_android_otobus_total<-cast(data_android_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value="totalEvents")
-if(!("Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_android_otobus_unique$eventLabel))){
+if(!("Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_android_otobus$eventLabel))){
   data_android_otobus_unique[,"Clicked on Cancel Ticket from CancelOrOpen Pop-up"] <- 0
 }
 
@@ -254,7 +254,7 @@ data_ios_otobus$Kanal<-"Ios-New"
 
 data_ios_otobus_unique<-cast(data_ios_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value = "uniqueEvents")
 data_ios_otobus_total<-cast(data_ios_otobus, Ulasim_Yolu+Hafta+Kanal~eventLabel, value="totalEvents")
-if(!("Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_ios_otobus_unique$eventLabel))){
+if(!("Clicked on Cancel Ticket from CancelOrOpen Pop-up" %in% unique(data_ios_otobus$eventLabel))){
   data_ios_otobus_unique[,"Clicked on Cancel Ticket from CancelOrOpen Pop-up"] <- 0
 }
 
@@ -716,6 +716,6 @@ data_final<-data_final%>%arrange(Ulasim_Yolu,Kanal)
 class(data_final$Sefer_Secimi)
 sheet_write(data_final,
             ss="https://docs.google.com/spreadsheets/d/1hlkt06QJRKKyjD5q89Fu1UC_hXdBefIMj-27k2z2vno/edit#gid=68852758",
-            sheet="28-Haziran-2021")
+            sheet="5-Temmuz-2021")
 # Aylık: https://docs.google.com/spreadsheets/d/1zNyDFlo9wJdtjGV9SzRp8z7TOctUyxV4gsi8tqAICnI/edit#gid=248854895 
 # Haftalık: https://docs.google.com/spreadsheets/d/1hlkt06QJRKKyjD5q89Fu1UC_hXdBefIMj-27k2z2vno/edit#gid=68852758
